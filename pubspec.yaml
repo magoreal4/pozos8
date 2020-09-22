@@ -39,7 +39,7 @@ dependencies:
   url_launcher: ^5.5.2
   # maps_toolkit: ^1.1.0+2
   geolocator: ^6.0.0+4
-  flutter_background_service: ^0.0.1+14
+  # flutter_background_service: ^0.0.1+14
 
 dev_dependencies:
   flutter_test:

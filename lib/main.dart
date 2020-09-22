@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:carp_background_location/carp_background_location.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:provider/provider.dart';
 
 import 'package:pozos8/pages/distribudor_page.dart';
@@ -18,31 +17,11 @@ void main() async {
   final prefs = new SharedP();
   await prefs.initPrefs();
   await Firebase.initializeApp();
-  FlutterBackgroundService.initialize(onStart);
 
   runApp(ChangeNotifierProvider(
     create: (context) => SharedP(),
     child: MyApp(),
   ));
-}
-
-void onStart() {
-  WidgetsFlutterBinding.ensureInitialized();
-  final service = FlutterBackgroundService();
-  service.onDataReceived.listen((event) {
-    print(event);
-  });
-
-  Timer.periodic(Duration(seconds: 2), (timer) {
-    service.setNotificationInfo(
-      title: "My App Service",
-      content: "Updated at ${DateTime.now()}",
-    );
-
-    service.sendData(
-      {"current_date": DateTime.now().toIso8601String()},
-    );
-  });
 }
 
 class MyApp extends StatefulWidget {
