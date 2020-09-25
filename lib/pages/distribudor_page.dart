@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:pozos8/pages/home_page.dart';
 import 'package:pozos8/pages/newreg_page.dart';
 import 'package:pozos8/pages/settings_page.dart';
@@ -63,7 +64,7 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
         return SettingsPage();
       case 2:
         {
-          prefs.precio = "";
+          prefs.precio = '';
           return NuevoRegistroPage();
         }
       default:

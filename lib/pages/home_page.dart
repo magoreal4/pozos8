@@ -99,11 +99,14 @@ class _ListProgsState extends State<ListProgs> {
   @override
   Widget build(BuildContext context) {
     final loc = Provider.of<SharedP>(context);
-    locCamion = GeoPoint((json.decode(loc.location)['fields']['lat']),
-        (json.decode(loc.location)['fields']['lon']));
-
+    locCamion = GeoPoint((json.decode(loc.pos)['fields']['lat']),
+        (json.decode(loc.pos)['fields']['lon']));
     return StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('programas').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection(prefs.nameUser)
+            .doc('trabajos')
+            .collection('programas')
+            .snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasData) {
             List<DocumentSnapshot> docss = snapshot.data.docs;
@@ -289,6 +292,7 @@ class _ListProgsState extends State<ListProgs> {
                                                 prefs.precio = data['fields']
                                                         ['price']
                                                     .toString();
+
                                                 print(prefs.precio);
                                                 Navigator.pushNamed(
                                                     context, 'registro',

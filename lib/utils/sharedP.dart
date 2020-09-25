@@ -27,16 +27,6 @@ class SharedP with ChangeNotifier {
     notifyListeners();
   }
 
-// GET y SET coordenadas
-  get location {
-    return _prefs.getString('location') ?? '';
-  }
-
-  set location(String value) {
-    _prefs.setString('location', value);
-    notifyListeners();
-  }
-
   // GET y SET nivel Camion
   get nivelCamion {
     return _prefs.getInt('nivelCamion') ?? 0;
@@ -71,6 +61,7 @@ class SharedP with ChangeNotifier {
 
   set pos(value) {
     _prefs.setString('pos', value);
+    notifyListeners();
   }
 
   // GET y SET primer logueo
@@ -105,11 +96,30 @@ class SharedP with ChangeNotifier {
 
   // GET y SET precio
   get precio {
-    return _prefs.getString('precio') ?? '0';
+    return _prefs.getString('precio') ?? '';
   }
 
   set precio(String value) {
     _prefs.setString('precio', value);
-    // notifyListeners();
+  }
+
+  // GET y SET precio
+  get contPos {
+    return _prefs.getBool('contPos') ?? true;
+  }
+
+  set contPos(bool value) {
+    _prefs.setBool('contPos', value);
+  }
+
+  // ----------------------PARA EL BACKGROUND----------------------
+
+  // GET y SET coordenadas para el background
+  get location {
+    return _prefs.getString('location') ?? '';
+  }
+
+  set location(String value) {
+    _prefs.setString('location', value);
   }
 }

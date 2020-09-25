@@ -1,16 +1,14 @@
 import 'dart:async';
 
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:pozos8/api/api_WP.dart';
 import 'package:pozos8/provider/firebase.dart';
+import 'package:toast/toast.dart';
+
+import 'package:pozos8/api/api_WP.dart';
 import 'package:pozos8/utils/reporteModel.dart';
 import 'package:pozos8/utils/sharedP.dart';
-
-import 'package:toast/toast.dart';
 
 const PADDING_8 = EdgeInsets.all(8.0);
 // const URL_POSTS = '$URL_WP_BASE/registros';
@@ -44,12 +42,10 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
   @override
   Widget build(BuildContext context) {
     // Informacion enviada desde HomePage
-
     String _id;
     final Map<String, dynamic> arguments =
         ModalRoute.of(context).settings.arguments;
     if (arguments == null) {
-      prefs.precio = '0';
       _id = null;
       print('No Tiene argumentos');
     } else {
@@ -57,8 +53,6 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
       _id = arguments['id'];
       print('Tiene argumentos: ${prefs.precio} -- $_id');
     }
-    print("==========Precio===========");
-    print(prefs.precio);
 
     return Scaffold(
         appBar: AppBar(
@@ -95,13 +89,13 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
                   children: <Widget>[
                     Flexible(
                       flex: 4,
-                      child: _flete(),
+                      child: (_id == null) ? _flete() : Center(),
                     ),
                     Flexible(
                         flex: 3,
                         child: SizedBox(
                           width: 100.0,
-                          child: _precio(prefs.precio),
+                          child: _precio(),
                         )),
                   ],
                 ),
@@ -194,18 +188,14 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
         });
   }
 
-  Widget _precio(precio) {
-    return TextFormField(
+  Widget _precio() {
+    return TextField(
       // initialValue: 0,
       maxLength: 4,
       controller: _precioController,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         labelText: 'Precio',
-        // suffixIcon: Icon(
-        //   Icons.dialpad,
-        //   color: Colors.black,
-        // ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.black),
@@ -215,7 +205,6 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
         prefs.precio = value;
       },
     );
-
     // return TextFormField(
     //   initialValue: (precio == null) ? '' : precio.toString(),
     //   decoration: InputDecoration(labelText: 'Precio'),
@@ -234,6 +223,7 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
               onPressed: _isValidating
                   ? () {}
                   : () {
+                      formKey.currentState.save();
                       _submit(_id);
                     },
               padding: EdgeInsets.symmetric(horizontal: 30.0),
@@ -259,12 +249,6 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
     });
     prefs.nivelCamion = repFormFields.nivel;
 
-    // // Verificar el estado de permisos y conexión
-    // await checkPermissions();
-    // print("1. Permisos Verificados");
-    // await checkService();
-    // print("2. Servicios Verificados");
-
     Position _position = await getCurrentPosition(
       timeLimit: Duration(minutes: 1),
     );
@@ -273,7 +257,6 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
     print("Latitud ${_position.latitude}");
     print("Longitud ${_position.longitude}");
 
-    formKey.currentState.save();
     repForm.date = DateTime.now().toString();
 
     Map<String, dynamic> repFields = {
@@ -281,30 +264,32 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
       "lon": _position.longitude,
       "estadia": 0,
       "nivel": prefs.nivelCamion,
-      "flete": repFormFields.flete,
+      "flete": repFormFields.flete ?? false,
+      "price": (prefs.precio == '') ? 0 : int.parse(prefs.precio)
     };
     Map<String, dynamic> rep = {
-      "title": prefs.precio,
+      "title": "No name",
       "date": repForm.date,
       "status": "publish",
       "author": prefs.userID,
       "fields": repFields
     };
+    // print(rep);
 
     (_id != null)
-        ? FirebaseProvider.done(key: _id, childBD: 'programas')
-        : FirebaseProvider.nuevoRegistro(reporte: rep, childBD: 'registros');
+        ? await FirebaseProvider.done(key: _id, reporte: rep)
+        : await FirebaseProvider.nuevoRegistro(reporte: rep);
 
-    // if (prefs.connect) {
-    if (true) {
-      prefs.precio = "0";
-      Toast.show("Reporte Enviado", context,
-          duration: 4, gravity: Toast.CENTER, backgroundColor: Colors.green);
-    } else {
-      prefs.precio = "0";
-      Toast.show("Reporte Emitido", context,
-          duration: 4, gravity: Toast.CENTER, backgroundColor: Colors.red[400]);
-    }
+    // // if (prefs.connect) {
+    // if (true) {
+    prefs.precio = '';
+    Toast.show("Reporte Enviado", context,
+        duration: 4, gravity: Toast.CENTER, backgroundColor: Colors.green);
+    // } else {
+    //   // prefs.precio = "0";
+    //   Toast.show("Reporte Emitido", context,
+    //       duration: 4, gravity: Toast.CENTER, backgroundColor: Colors.red[400]);
+    // }
     setState(() {
       _isValidating = false;
     });

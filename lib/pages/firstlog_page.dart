@@ -179,7 +179,7 @@ class _FirstLogPageState extends State<FirstLogPage> {
         "author": prefs.userID,
         "fields": repFields
       };
-      prefs.location = json.encode(rep);
+      prefs.pos = json.encode(rep);
       // Enviar a firebase verificar usuario
       exist = await FirebaseProvider.verifyUser();
       if (exist) {
@@ -191,14 +191,12 @@ class _FirstLogPageState extends State<FirstLogPage> {
       }
 
       // Enviar a registro posicion
-      FirebaseProvider.nuevoRegistro(reporte: rep, childBD: 'registros');
+      FirebaseProvider.nuevoTracking(reporte: rep, collection: 'stop');
       prefs.log = true;
 
       setState(() {
         _isValidating = false;
       });
-
-      // Navigator.pushNamed(context, 'distribuidor');
       Navigator.popAndPushNamed(context, 'distribuidor');
     } else {
       Toast.show("Credenciales inválidas. Revise Nombre y/o teléfono", context,

@@ -1,23 +1,38 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:carp_background_location/carp_background_location.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:pozos8/provider/firebase.dart';
 import 'package:provider/provider.dart';
 
 import 'package:pozos8/pages/distribudor_page.dart';
 import 'package:pozos8/pages/newreg_page.dart';
-import 'package:pozos8/provider/firebase.dart';
 import 'package:pozos8/pages/firstlog_page.dart';
 import 'package:pozos8/utils/sharedP.dart';
+
+Future<void> getPermission() async {
+  // Verificar el estado de permisos y conexión
+  LocationPermission permission = await checkPermission();
+  if (permission != LocationPermission.always) {
+    LocationPermission permission = await requestPermission();
+    if (permission != LocationPermission.always) {
+      await openLocationSettings();
+    }
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = new SharedP();
   await prefs.initPrefs();
   await Firebase.initializeApp();
+  await getPermission();
+
+  // Inicia el servicio en un isolate aparte
   FlutterBackgroundService.initialize(onStart);
 
   runApp(ChangeNotifierProvider(
@@ -26,139 +41,197 @@ void main() async {
   ));
 }
 
-void onStart() {
+final prefs = new SharedP();
+enum LocationStatus { UNKNOWN, RUNNING, STOPPED }
+CollectionReference pos = FirebaseFirestore.instance.collection(prefs.nameUser);
+Stream<DocumentSnapshot> _request =
+    FirebaseFirestore.instance.collection('All').doc('request').snapshots();
+
+// Parametros para el posicionamiento continuo
+Stream<Position> positionStream = getPositionStream(
+    desiredAccuracy: LocationAccuracy.best,
+    distanceFilter: 25,
+    timeInterval: 15000);
+StreamSubscription<Position> positionStreamS;
+LocationStatus _status = LocationStatus.UNKNOWN;
+
+// --------Servicios en Background--------
+void onStart() async {
+  // Todos lo sparametros para se ejecuten en el otro isolate
   WidgetsFlutterBinding.ensureInitialized();
   final service = FlutterBackgroundService();
-  service.onDataReceived.listen((event) {
-    print(event);
-  });
+  await Firebase.initializeApp();
+  final prefs2 = new SharedP();
+  await prefs2.initPrefs();
+  _request.listen(onData);
+  positionStreamS = positionStream.listen(contPosition);
 
-  Timer.periodic(Duration(seconds: 2), (timer) {
-    service.setNotificationInfo(
-      title: "My App Service",
-      content: "Updated at ${DateTime.now()}",
-    );
+  // _contPos.listen((event) {
+  //   if (event['contPosition']) {
+  //     positionStreamS = positionStream.listen(contPosition);
+  //   } else {
+  //     inicial ? inicial = false : positionStreamS.cancel();
+  //   }
+  // });
 
-    service.sendData(
-      {"current_date": DateTime.now().toIso8601String()},
-    );
-  });
+  service.setNotificationInfo(
+    title: "Servicio Pozo Séptico",
+    content: "Hola",
+  );
+
+  // Position position0 = await getLastKnownPosition();
+
+  // final service = FlutterBackgroundService();
+  // final audioPlayer = AudioPlayer();
+
+  // String url =
+  //     "https://www.mediacollege.com/downloads/sound-effects/nature/forest/rainforest-ambient.mp3";
+
+  // audioPlayer.onPlayerStateChanged.listen((event) {
+  //   if (event == AudioPlayerState.COMPLETED) {
+  //     audioPlayer.play(url);
+  //   }
+  // });
+
+  // audioPlayer.play(url);
+
+  // service.onDataReceived.listen((event) {
+  //   print(event);
+  // });
+
+  // Timer.periodic(Duration(seconds: 1), (timer) {
+  //   service.setNotificationInfo(
+  //     title: "My App Service",
+  //     content: "Updated at ${DateTime.now()}",
+  //   );
+
+  //   service.sendData(
+  //     {"current_date": DateTime.now().toIso8601String()},
+  //   );
+  // });
+}
+
+// Funcion de background oara la localización continua
+void contPosition(Position locationDto) async {
+  final service = FlutterBackgroundService();
+  // Todo lo que es prefs2 es porque esta en el background
+  final prefs2 = new SharedP();
+
+  if (_status == LocationStatus.UNKNOWN) {
+    _status = LocationStatus.RUNNING;
+  }
+  Map<String, dynamic> _time0;
+  Map<String, dynamic> _time1 = locationDto.toJson();
+  (prefs2.location == '')
+      ? _time0 = _time1
+      : _time0 = json.decode(prefs2.location);
+  prefs2.location = json.encode(_time1);
+  final int difference =
+      ((_time1['timestamp'] - _time0['timestamp']) / 1000).round();
+
+  print('Segundos $difference');
+
+  (difference > 20)
+      ? _time0.addAll({'estadia': difference.toString(), 'title': 'stop'})
+      : _time0.addAll({'estadia': '0', 'title': 'track'});
+
+  // Envia al hilo principal para ser enviado a firebase
+  service.sendData(_time0);
+}
+
+// Escucha en segundo plano para enviar la posicion instantanea
+void onData(DocumentSnapshot data) async {
+  if (data.data()['location'] ?? false) {
+    print("Request location: ${data.data()['location']}");
+    Position position =
+        await getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    await pos
+        .doc('position')
+        .set({
+          'lat': position.latitude,
+          'lon': position.longitude,
+          'speed': position.speed.round(),
+          "heading": position.heading.round()
+        })
+        .then((value) => print("Position Encontrada"))
+        .catchError(
+            (error) => print("No se pudo encontrar la posición: $error"));
+  }
 }
 
 class MyApp extends StatefulWidget {
   @override
-  MyAppState createState() => MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
-enum LocationStatus { UNKNOWN, RUNNING, STOPPED }
-
-String dtoToString(LocationDto dto) =>
-    'Location ${dto.latitude}, ${dto.longitude} at ${DateTime.fromMillisecondsSinceEpoch(dto.time ~/ 1)}';
-
-class MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> {
   final prefs = new SharedP();
-  bool isRunning;
-  LocationDto lastLocation;
-  DateTime lastTimeLocation;
-  LocationManager locationManager = LocationManager.instance;
-  Stream<LocationDto> dtoStream;
-  StreamSubscription<LocationDto> dtoSubscription;
-  LocationStatus _status = LocationStatus.UNKNOWN;
-  Map<String, dynamic> repStore;
+
+  Stream contPos = FlutterBackgroundService().onDataReceived;
+  StreamSubscription contPosSubscription;
+
+  StreamSubscription contPosFireSubscription;
 
   @override
   void initState() {
     super.initState();
-    locationManager.interval = 20;
-    locationManager.distanceFilter = 25;
-    locationManager.notificationTitle = 'CARP Location Example';
-    locationManager.notificationMsg = 'CARP is tracking your location';
-    dtoStream = locationManager.dtoStream;
-    dtoSubscription = dtoStream.listen(onData);
-    //start();
+    // Recibe los datos de la posición contínua del background
+    contPosSubscription = contPos.listen(onData);
+
+    // Escucha cambios de firestore para enviarlo al backcround
+    Stream<DocumentSnapshot> contPosFire = FirebaseFirestore.instance
+        .collection(prefs.nameUser)
+        .doc('datos')
+        .snapshots();
+    contPosFireSubscription = contPosFire.listen(contPostData);
   }
 
   @override
   void dispose() {
     super.dispose();
-    dtoSubscription.cancel();
-    locationManager.stop();
+    contPosSubscription.cancel();
+    contPosFireSubscription.cancel();
   }
 
-  void start() async {
-    // Subscribe if it hasnt been done already
-    if (dtoSubscription != null) {
-      dtoSubscription.cancel();
+  // Escucha cambios de firestore para enviarlo al backcrounf
+  void contPostData(dynamic data) async {
+    //Si esta logueado recien escucha, porque antes de eso no existe usuario y causa error
+    if (prefs.log) {
+      prefs.contPos = data.data()['contPosition'];
+      FlutterBackgroundService().sendData({
+        "contPosition": prefs.contPos,
+      });
     }
-    dtoSubscription = dtoStream.listen(onData);
-    await locationManager.start();
-
-    _status = LocationStatus.RUNNING;
-
-    // Obtener coordenadas y colocarles en shared prefs. para que no cause error
   }
 
-  void stop() async {
-    // setState(() {
-    _status = LocationStatus.STOPPED;
-    // });
-    dtoSubscription.cancel();
-    await locationManager.stop();
-  }
-
-  void onData(LocationDto dto) async {
-    if (_status == LocationStatus.UNKNOWN) {
-      _status = LocationStatus.RUNNING;
-    }
-    if (_status == LocationStatus.RUNNING && prefs.log == true && dto != null) {
+// Recibe los datos de la posición contínua del background
+  void onData(dynamic data) async {
+    if (data != null && prefs.log) {
       Map<String, dynamic> repFields = {
-        "lat": dto.latitude,
-        "lon": dto.longitude,
-        "estadia": 0,
-        "speed": dto.speed.round(),
-        "heading": dto.heading.round()
+        "lat": data['latitude'],
+        "lon": data['longitude'],
+        "estadia": int.parse(data['estadia']),
+        "speed": data['speed'].round(),
+        "heading": data['heading']
       };
       Map<String, dynamic> rep = {
-        "title": "tracking",
-        "date": dto.time.round().toString(),
-        // "date": DateTime.fromMicrosecondsSinceEpoch(dto.time.round() * 1000)
-        //     .toString(),
+        "title": data['title'],
+        "date": DateTime.fromMicrosecondsSinceEpoch(
+                data['timestamp'].round() * 1000)
+            .toString(),
         "status": "publish",
-        "author": "1",
+        "author": prefs.userID,
         "fields": repFields
       };
+      print('------------------------------------------------- $rep');
+      prefs.pos = json.encode(rep);
 
-      (prefs.location != '')
-          ? repStore = json.decode(prefs.location)
-          : repStore = rep;
-      prefs.location = json.encode(rep);
-
-      // print(repStore['date']);
-      // print(dto.time.round());
-
-      final int difference =
-          ((dto.time.round() - int.parse(repStore['date'])) / 1000).round();
-
-      print('Segundos $difference');
-
-      if (difference > 65) {
-        repStore['title'] = 'stopping';
-        repStore['fields']['estadia'] = difference.toString();
-        repStore['date'] = DateTime.fromMicrosecondsSinceEpoch(
-                int.parse(repStore['date']) * 1000)
-            .toString();
-        await FirebaseProvider.nuevoRegistro(
-            reporte: repStore, childBD: 'tracking');
-        print('-------------------------------------------------');
-        print('$repStore');
-      } else {
-        rep['date'] =
-            DateTime.fromMicrosecondsSinceEpoch(int.parse(rep['date']) * 1000)
-                .toString();
-        await FirebaseProvider.nuevoRegistro(reporte: rep, childBD: 'tracking');
-        print('-------------------------------------------------');
-        print('$rep');
-      }
+      prefs.contPos
+          ? await FirebaseProvider.nuevoTracking(
+              reporte: rep, collection: data['title'])
+          : null;
+    } else {
+      return;
     }
   }
 
@@ -196,7 +269,7 @@ class MyAppState extends State<MyApp> {
                   valueIndicatorTextStyle: TextStyle(
                       fontWeight: FontWeight.bold, color: Colors.black)),
               iconTheme: IconThemeData(color: Colors.amber[300])),
-      // initialRoute: 'firstlog',r
+      // initialRoute: 'firstlog',
       initialRoute: prefs.log ? 'distribuidor' : 'firstlog',
       routes: {
         // 'prueba': (context) => PruebaPage(
