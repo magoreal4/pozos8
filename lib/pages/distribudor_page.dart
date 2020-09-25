@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 import 'package:pozos8/pages/home_page.dart';
 import 'package:pozos8/pages/newreg_page.dart';
@@ -16,10 +20,23 @@ class DistribuidorPage extends StatefulWidget {
 class _DistribuidorPageState extends State<DistribuidorPage> {
   int currenIndex = 0;
   final prefs = new SharedP();
+  StreamSubscription contPosFireSubscription;
 
   @override
   void initState() {
     super.initState();
+    // Escucha cambios de firestore para enviarlo al background
+    Stream<DocumentSnapshot> contPosFire = FirebaseFirestore.instance
+        .collection('choferes')
+        .doc(prefs.nameUser)
+        .snapshots();
+    contPosFireSubscription = contPosFire.listen(contPostData);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    contPosFireSubscription.cancel();
   }
 
   @override
@@ -28,6 +45,15 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
       body: callPage(currenIndex),
       bottomNavigationBar: _bottomNavigationBar(context),
     );
+  }
+
+  // Escucha cambios de firestore para enviarlo al backcround
+  void contPostData(dynamic data) async {
+    //Si esta logueado recien escucha, porque antes de eso no existe usuario y causa error
+    prefs.contPos = data.data()['contPosition'];
+    FlutterBackgroundService().sendData({
+      "contPosition": prefs.contPos,
+    });
   }
 
   Widget _bottomNavigationBar(BuildContext context) {

@@ -173,7 +173,7 @@ class _FirstLogPageState extends State<FirstLogPage> {
         "lon": _position.longitude ?? 0,
       };
       Map<String, dynamic> rep = {
-        "title": "Iniciando",
+        "title": "stop",
         "date": DateTime.now().toString(),
         "status": "publish",
         "author": prefs.userID,

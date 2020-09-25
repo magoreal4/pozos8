@@ -4,12 +4,13 @@ import 'package:pozos8/utils/sharedP.dart';
 
 class FirebaseProvider {
   static CollectionReference chofer =
-      FirebaseFirestore.instance.collection(prefs.nameUser);
+      FirebaseFirestore.instance.collection('choferes');
+
   static SharedP prefs = new SharedP();
 
   static Future<bool> verifyUser() async {
     return chofer
-        .doc('datos')
+        .doc(prefs.nameUser)
         .get()
         .then((DocumentSnapshot documentSnapshot) async {
       if (documentSnapshot.exists) {
@@ -25,7 +26,7 @@ class FirebaseProvider {
 
   static Future<void> addUser() {
     return chofer
-        .doc('datos')
+        .doc(prefs.nameUser)
         .set({
           'telefono': prefs.telfUser,
           'userID_WP': prefs.userID,
@@ -39,16 +40,16 @@ class FirebaseProvider {
 
   static Future<void> userUpdate() {
     return chofer
-        .doc('datos')
+        .doc(prefs.nameUser)
         .update({'tokenPN': prefs.tokenPN, 'userID_WP': prefs.userID})
         .then((value) => print("Modificacion del chofer "))
         .catchError((error) => print("Fallo modificacion del chofer: $error"));
   }
 
   static Future<void> nuevoTracking({Map reporte, String collection}) {
-    return chofer
-        .doc('tracking')
-        .collection(collection)
+    CollectionReference track =
+        FirebaseFirestore.instance.collection(collection);
+    return track
         .doc(reporte['date'])
         .set(reporte)
         .then((_) => print("$collection enviado"))
@@ -56,9 +57,9 @@ class FirebaseProvider {
   }
 
   static Future<void> nuevoRegistro({Map reporte}) {
-    return chofer
-        .doc('trabajos')
-        .collection('registros')
+    CollectionReference registros =
+        FirebaseFirestore.instance.collection('registros');
+    return registros
         .doc(reporte['date'])
         .set(reporte)
         .then((_) => print("Reporte enviado"))
@@ -66,9 +67,9 @@ class FirebaseProvider {
   }
 
   static Future<void> done({String key, Map reporte}) {
-    return chofer
-        .doc('trabajos')
-        .collection('programas')
+    CollectionReference programas =
+        FirebaseFirestore.instance.collection('programas');
+    return programas
         .doc(key)
         .update({'done': true, 'date': reporte['date']})
         .then((_) => print("Reporte atualizado"))

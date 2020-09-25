@@ -43,7 +43,7 @@ void main() async {
 
 final prefs = new SharedP();
 enum LocationStatus { UNKNOWN, RUNNING, STOPPED }
-CollectionReference pos = FirebaseFirestore.instance.collection(prefs.nameUser);
+CollectionReference pos = FirebaseFirestore.instance.collection('choferes');
 Stream<DocumentSnapshot> _request =
     FirebaseFirestore.instance.collection('All').doc('request').snapshots();
 
@@ -170,38 +170,17 @@ class _MyAppState extends State<MyApp> {
   Stream contPos = FlutterBackgroundService().onDataReceived;
   StreamSubscription contPosSubscription;
 
-  StreamSubscription contPosFireSubscription;
-
   @override
   void initState() {
     super.initState();
     // Recibe los datos de la posición contínua del background
     contPosSubscription = contPos.listen(onData);
-
-    // Escucha cambios de firestore para enviarlo al backcround
-    Stream<DocumentSnapshot> contPosFire = FirebaseFirestore.instance
-        .collection(prefs.nameUser)
-        .doc('datos')
-        .snapshots();
-    contPosFireSubscription = contPosFire.listen(contPostData);
   }
 
   @override
   void dispose() {
     super.dispose();
     contPosSubscription.cancel();
-    contPosFireSubscription.cancel();
-  }
-
-  // Escucha cambios de firestore para enviarlo al backcrounf
-  void contPostData(dynamic data) async {
-    //Si esta logueado recien escucha, porque antes de eso no existe usuario y causa error
-    if (prefs.log) {
-      prefs.contPos = data.data()['contPosition'];
-      FlutterBackgroundService().sendData({
-        "contPosition": prefs.contPos,
-      });
-    }
   }
 
 // Recibe los datos de la posición contínua del background

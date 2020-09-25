@@ -102,20 +102,16 @@ class _ListProgsState extends State<ListProgs> {
     locCamion = GeoPoint((json.decode(loc.pos)['fields']['lat']),
         (json.decode(loc.pos)['fields']['lon']));
     return StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection(prefs.nameUser)
-            .doc('trabajos')
-            .collection('programas')
-            .snapshots(),
+        stream: FirebaseFirestore.instance.collection('programas').snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasData) {
             List<DocumentSnapshot> docss = snapshot.data.docs;
             return SliverList(
                 delegate: SliverChildBuilderDelegate((_, index) {
               Map<String, dynamic> data = docss[index].data();
-
               // Agrega el key de cada base de datos al mapa para depsues borrarlos
               data.addAll({'id': docss[index].id});
+
               bool done = data['done'];
               GeoPoint punto = data['fields']['geopoint'];
               DateTime fecha =
@@ -127,189 +123,194 @@ class _ListProgsState extends State<ListProgs> {
                   "${fecha.day.toString().padLeft(2, '0')}-${fecha.month.toString().padLeft(2, '0')}-${fecha.year.toString()}";
               dist(locCamion, punto);
 
-              return Container(
-                  padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
-                  // height: 200,
-                  width: double.maxFinite,
-                  child: Card(
-                    color: done ? Colors.grey[400] : Colors.white,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
-                    elevation: 5,
-                    child: Stack(
-                      children: <Widget>[
-                        Padding(
-                            padding: EdgeInsets.all(10),
-                            child: Column(
-                              children: <Widget>[
-                                Row(
-                                  children: <Widget>[
-                                    (!done)
-                                        ? Icon(Icons.album, size: 30)
-                                        : Center(),
-                                    SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                    ),
-                                    Text(
-                                      data['fields']['name'],
-                                      style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  children: <Widget>[
-                                    SizedBox(
-                                      height: 20,
-                                      width: 45,
-                                    ),
-                                    Icon(
-                                      Icons.phone,
-                                      color: Colors.black,
-                                    ),
-                                    FlatButton(
-                                        onPressed: () {
-                                          _launchWhatsApp(
-                                              phone:
-                                                  '+591${data['fields']['phone']}',
-                                              message: done
-                                                  ? 'Somos de la empresa de limpieza de pozos, estamos en camino'
-                                                  : '');
-                                        },
-                                        child: Text(
-                                          data['fields']['phone'].toString(),
-                                          style: TextStyle(
-                                              fontSize: 18,
-                                              color: Colors.blue[700],
-                                              fontWeight: FontWeight.bold),
-                                        )),
-                                    Spacer(),
-                                    Text(
-                                      'Bs.',
-                                      style: TextStyle(
-                                        color: Colors.black54,
+              // Para desplegar solo los programas para ese camion
+              if (data['author'] == prefs.userID) {
+                return Container(
+                    padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
+                    // height: 200,
+                    width: double.maxFinite,
+                    child: Card(
+                      color: done ? Colors.grey[400] : Colors.white,
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15)),
+                      elevation: 5,
+                      child: Stack(
+                        children: <Widget>[
+                          Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Column(
+                                children: <Widget>[
+                                  Row(
+                                    children: <Widget>[
+                                      (!done)
+                                          ? Icon(Icons.album, size: 30)
+                                          : Center(),
+                                      SizedBox(
+                                        height: 20,
+                                        width: 20,
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: 10,
-                                    ),
-                                    Text(
-                                      '${data['fields']['price']}',
-                                      style: TextStyle(
-                                          color: Colors.black87,
-                                          fontSize: 25,
-                                          fontStyle: FontStyle.italic,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  children: <Widget>[
-                                    SizedBox(
-                                      width: 45,
-                                    ),
-                                    Icon(
-                                      Icons.timer,
-                                      color: Colors.black,
-                                    ),
-                                    SizedBox(
-                                      width: 15,
-                                    ),
-                                    Text(
-                                      hora,
-                                      style: TextStyle(
-                                          fontSize: 20,
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    Spacer(),
-                                    Text(
-                                      convertedDateTime,
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.normal),
-                                    ),
-                                  ],
-                                ),
-                                (!done)
-                                    ? Padding(
-                                        padding:
-                                            const EdgeInsets.only(top: 8.0),
-                                        child: _comentario(
-                                            data['fields']['comment']),
-                                        //
-                                      )
-                                    : Center(),
-                                (!done) ? Divider() : Center(),
-                                (!done)
-                                    ? Row(
-                                        // mainAxisAlignment permite alinear el contenido dentro de Row
-                                        // en este caso le digo que use spaceBetwee, esto hara que
-                                        // cualquier espacio horizontal que no se haya asignado dentro de children
-                                        // se divida de manera uniforme y se coloca entre los elementos secundarios.
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: <Widget>[
-                                          // Agregamos los botones de tipo Flat, un icono, un texto y un evento
-                                          new FlatButton.icon(
-                                            // Un icono puede recibir muchos atributos, aqui solo usaremos icono, tamaño y color
-                                            icon: const Icon(Icons.add_location,
-                                                color: Colors.red, size: 28.0),
-                                            label: const Text('Mapa'),
-                                            // Esto mostrara 'Me encanta' por la terminal
-                                            onPressed: () {
-                                              MapsLauncher.launchCoordinates(
-                                                  punto.latitude,
-                                                  punto.longitude);
-                                            },
-                                          ),
-                                          StreamBuilder(
-                                            builder: (context, snapshot) {
-                                              return Text(
-                                                'Km. $distancia',
-                                                style: TextStyle(
-                                                    color: Colors.black),
-                                              );
-                                            },
-                                          ),
-                                          new FlatButton(
-                                              color:
-                                                  Theme.of(context).buttonColor,
-                                              child: Text('Ejecutado',
-                                                  style:
-                                                      TextStyle(fontSize: 18)),
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          30.0)),
-                                              // textColor: Colors.white,
+                                      Text(
+                                        data['fields']['name'],
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: <Widget>[
+                                      SizedBox(
+                                        height: 20,
+                                        width: 45,
+                                      ),
+                                      Icon(
+                                        Icons.phone,
+                                        color: Colors.black,
+                                      ),
+                                      FlatButton(
+                                          onPressed: () {
+                                            _launchWhatsApp(
+                                                phone:
+                                                    '+591${data['fields']['phone']}',
+                                                message: done
+                                                    ? 'Somos de la empresa de limpieza de pozos, estamos en camino'
+                                                    : '');
+                                          },
+                                          child: Text(
+                                            data['fields']['phone'].toString(),
+                                            style: TextStyle(
+                                                fontSize: 18,
+                                                color: Colors.blue[700],
+                                                fontWeight: FontWeight.bold),
+                                          )),
+                                      Spacer(),
+                                      Text(
+                                        'Bs.',
+                                        style: TextStyle(
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 10,
+                                      ),
+                                      Text(
+                                        '${data['fields']['price']}',
+                                        style: TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 25,
+                                            fontStyle: FontStyle.italic,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: <Widget>[
+                                      SizedBox(
+                                        width: 45,
+                                      ),
+                                      Icon(
+                                        Icons.timer,
+                                        color: Colors.black,
+                                      ),
+                                      SizedBox(
+                                        width: 15,
+                                      ),
+                                      Text(
+                                        hora,
+                                        style: TextStyle(
+                                            fontSize: 20,
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Spacer(),
+                                      Text(
+                                        convertedDateTime,
+                                        style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.normal),
+                                      ),
+                                    ],
+                                  ),
+                                  (!done)
+                                      ? Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 8.0),
+                                          child: _comentario(
+                                              data['fields']['comment']),
+                                          //
+                                        )
+                                      : Center(),
+                                  (!done) ? Divider() : Center(),
+                                  (!done)
+                                      ? Row(
+                                          // mainAxisAlignment permite alinear el contenido dentro de Row
+                                          // en este caso le digo que use spaceBetwee, esto hara que
+                                          // cualquier espacio horizontal que no se haya asignado dentro de children
+                                          // se divida de manera uniforme y se coloca entre los elementos secundarios.
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: <Widget>[
+                                            // Agregamos los botones de tipo Flat, un icono, un texto y un evento
+                                            new FlatButton.icon(
+                                              // Un icono puede recibir muchos atributos, aqui solo usaremos icono, tamaño y color
+                                              icon: const Icon(
+                                                  Icons.add_location,
+                                                  color: Colors.red,
+                                                  size: 28.0),
+                                              label: const Text('Mapa'),
+                                              // Esto mostrara 'Me encanta' por la terminal
                                               onPressed: () {
-                                                prefs.precio = data['fields']
-                                                        ['price']
-                                                    .toString();
+                                                MapsLauncher.launchCoordinates(
+                                                    punto.latitude,
+                                                    punto.longitude);
+                                              },
+                                            ),
+                                            StreamBuilder(
+                                              builder: (context, snapshot) {
+                                                return Text(
+                                                  'Km. $distancia',
+                                                  style: TextStyle(
+                                                      color: Colors.black),
+                                                );
+                                              },
+                                            ),
+                                            new FlatButton(
+                                                color: Theme.of(context)
+                                                    .buttonColor,
+                                                child: Text('Ejecutado',
+                                                    style: TextStyle(
+                                                        fontSize: 18)),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            30.0)),
+                                                // textColor: Colors.white,
+                                                onPressed: () {
+                                                  prefs.precio = data['fields']
+                                                          ['price']
+                                                      .toString();
 
-                                                print(prefs.precio);
-                                                Navigator.pushNamed(
-                                                    context, 'registro',
-                                                    arguments: {
-                                                      'precio': data['fields']
-                                                          ['price'],
-                                                      'id': data['id']
-                                                    });
-                                              })
-                                        ],
-                                      )
-                                    : Center(),
-                              ],
-                            ))
-                      ],
-                    ),
-                  ));
+                                                  print(prefs.precio);
+                                                  Navigator.pushNamed(
+                                                      context, 'registro',
+                                                      arguments: {
+                                                        'precio': data['fields']
+                                                            ['price'],
+                                                        'id': data['id']
+                                                      });
+                                                })
+                                          ],
+                                        )
+                                      : Center(),
+                                ],
+                              ))
+                        ],
+                      ),
+                    ));
+              }
             }, childCount: docss.length));
           } else {
             return SliverToBoxAdapter(child: CircularProgressIndicator());
