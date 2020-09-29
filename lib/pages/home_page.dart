@@ -109,6 +109,7 @@ class _ListProgsState extends State<ListProgs> {
             return SliverList(
                 delegate: SliverChildBuilderDelegate((_, index) {
               Map<String, dynamic> data = docss[index].data();
+              print(data);
               // Agrega el key de cada base de datos al mapa para depsues borrarlos
               data.addAll({'id': docss[index].id});
 
@@ -122,9 +123,13 @@ class _ListProgsState extends State<ListProgs> {
               String convertedDateTime =
                   "${fecha.day.toString().padLeft(2, '0')}-${fecha.month.toString().padLeft(2, '0')}-${fecha.year.toString()}";
               dist(locCamion, punto);
-
+              print("******************************");
+              print(data['author']);
+              print(prefs.userID);
+              print("******************************");
               // Para desplegar solo los programas para ese camion
               if (data['author'] == prefs.userID) {
+                // if (data['author'] == prefs.userID) {
                 return Container(
                     padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
                     // height: 200,
@@ -196,7 +201,7 @@ class _ListProgsState extends State<ListProgs> {
                                         width: 10,
                                       ),
                                       Text(
-                                        '${data['fields']['price']}',
+                                        '${data['fields']['precio']}',
                                         style: TextStyle(
                                             color: Colors.black87,
                                             fontSize: 25,
@@ -298,7 +303,7 @@ class _ListProgsState extends State<ListProgs> {
                                                       context, 'registro',
                                                       arguments: {
                                                         'precio': data['fields']
-                                                            ['price'],
+                                                            ['precio'],
                                                         'id': data['id']
                                                       });
                                                 })
@@ -310,6 +315,8 @@ class _ListProgsState extends State<ListProgs> {
                         ],
                       ),
                     ));
+              } else {
+                return Center();
               }
             }, childCount: docss.length));
           } else {

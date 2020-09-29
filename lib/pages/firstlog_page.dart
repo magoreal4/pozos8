@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:pozos8/utils/dateFormat.dart';
 import 'package:toast/toast.dart';
 
 import 'package:pozos8/api/api_WP.dart';
@@ -174,7 +175,7 @@ class _FirstLogPageState extends State<FirstLogPage> {
       };
       Map<String, dynamic> rep = {
         "title": "stop",
-        "date": DateTime.now().toString(),
+        "date": formatDate(dateTime: DateTime.now()),
         "status": "publish",
         "author": prefs.userID,
         "fields": repFields
@@ -191,7 +192,7 @@ class _FirstLogPageState extends State<FirstLogPage> {
       }
 
       // Enviar a registro posicion
-      FirebaseProvider.nuevoTracking(reporte: rep, collection: 'stop');
+      FirebaseProvider.nuevoTracking(reporte: rep);
       prefs.log = true;
 
       setState(() {

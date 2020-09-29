@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pozos8/provider/firebase.dart';
+import 'package:pozos8/utils/dateFormat.dart';
 import 'package:toast/toast.dart';
 
 import 'package:pozos8/api/api_WP.dart';
@@ -257,7 +258,7 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
     print("Latitud ${_position.latitude}");
     print("Longitud ${_position.longitude}");
 
-    repForm.date = DateTime.now().toString();
+    repForm.date = formatDate(dateTime: DateTime.now());
 
     Map<String, dynamic> repFields = {
       "lat": _position.latitude,
@@ -265,7 +266,7 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
       "estadia": 0,
       "nivel": prefs.nivelCamion,
       "flete": repFormFields.flete ?? false,
-      "price": (prefs.precio == '') ? 0 : int.parse(prefs.precio)
+      "precio": (prefs.precio == '') ? 0 : int.parse(prefs.precio)
     };
     Map<String, dynamic> rep = {
       "title": "No name",

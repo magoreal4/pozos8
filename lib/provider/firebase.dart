@@ -5,6 +5,8 @@ import 'package:pozos8/utils/sharedP.dart';
 class FirebaseProvider {
   static CollectionReference chofer =
       FirebaseFirestore.instance.collection('choferes');
+  static CollectionReference tracking =
+      FirebaseFirestore.instance.collection('tracking');
 
   static SharedP prefs = new SharedP();
 
@@ -46,13 +48,11 @@ class FirebaseProvider {
         .catchError((error) => print("Fallo modificacion del chofer: $error"));
   }
 
-  static Future<void> nuevoTracking({Map reporte, String collection}) {
-    CollectionReference track =
-        FirebaseFirestore.instance.collection(collection);
-    return track
+  static Future<void> nuevoTracking({Map reporte}) {
+    return tracking
         .doc(reporte['date'])
         .set(reporte)
-        .then((_) => print("$collection enviado"))
+        .then((_) => print("${reporte['title']} enviado"))
         .catchError((error) => print("Falla al enviar reporte: $error"));
   }
 

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pozos8/provider/firebase.dart';
+import 'package:pozos8/utils/dateFormat.dart';
 import 'package:provider/provider.dart';
 
 import 'package:pozos8/pages/distribudor_page.dart';
@@ -43,15 +44,15 @@ void main() async {
 
 final prefs = new SharedP();
 enum LocationStatus { UNKNOWN, RUNNING, STOPPED }
-CollectionReference pos = FirebaseFirestore.instance.collection('choferes');
+CollectionReference pos = FirebaseFirestore.instance.collection('tracking');
 Stream<DocumentSnapshot> _request =
-    FirebaseFirestore.instance.collection('All').doc('request').snapshots();
+    FirebaseFirestore.instance.collection('All').doc('position').snapshots();
 
 // Parametros para el posicionamiento continuo
 Stream<Position> positionStream = getPositionStream(
     desiredAccuracy: LocationAccuracy.best,
     distanceFilter: 25,
-    timeInterval: 15000);
+    timeInterval: 120000); // cada 120 segundos
 StreamSubscription<Position> positionStreamS;
 LocationStatus _status = LocationStatus.UNKNOWN;
 
@@ -63,6 +64,8 @@ void onStart() async {
   await Firebase.initializeApp();
   final prefs2 = new SharedP();
   await prefs2.initPrefs();
+
+  // Escucha cambios para todos los usuarios
   _request.listen(onData);
   positionStreamS = positionStream.listen(contPosition);
 
@@ -131,7 +134,7 @@ void contPosition(Position locationDto) async {
 
   print('Segundos $difference');
 
-  (difference > 20)
+  (difference > 300) // si se queda mas de xxx segundos
       ? _time0.addAll({'estadia': difference.toString(), 'title': 'stop'})
       : _time0.addAll({'estadia': '0', 'title': 'track'});
 
@@ -141,22 +144,33 @@ void contPosition(Position locationDto) async {
 
 // Escucha en segundo plano para enviar la posicion instantanea
 void onData(DocumentSnapshot data) async {
-  if (data.data()['location'] ?? false) {
-    print("Request location: ${data.data()['location']}");
-    Position position =
-        await getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    await pos
-        .doc('position')
-        .set({
-          'lat': position.latitude,
-          'lon': position.longitude,
-          'speed': position.speed.round(),
-          "heading": position.heading.round()
-        })
-        .then((value) => print("Position Encontrada"))
-        .catchError(
-            (error) => print("No se pudo encontrar la posición: $error"));
-  }
+  // if (data.data()['location'] ?? false) {
+  print("Request location: ${data.data()}");
+  Position _position =
+      await getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+  var _date = formatDate(dateTime: DateTime.now());
+
+  Map<String, dynamic> repFields = {
+    "lat": _position.latitude,
+    "lon": _position.longitude,
+    "speed": _position.speed.round(),
+    "heading": _position.heading.round()
+  };
+  Map<String, dynamic> rep = {
+    "title": "track",
+    "date": _date,
+    "status": "publish",
+    "author": prefs.userID,
+    "fields": repFields
+  };
+
+  await pos
+      .doc(_date)
+      .set(rep)
+      .then((value) => print("Position Encontrada"))
+      .catchError((error) => print("No se pudo encontrar la posición: $error"));
+  // }
 }
 
 class MyApp extends StatefulWidget {
@@ -191,24 +205,23 @@ class _MyAppState extends State<MyApp> {
         "lon": data['longitude'],
         "estadia": int.parse(data['estadia']),
         "speed": data['speed'].round(),
-        "heading": data['heading']
+        "heading": data['heading'].round()
       };
       Map<String, dynamic> rep = {
         "title": data['title'],
-        "date": DateTime.fromMicrosecondsSinceEpoch(
-                data['timestamp'].round() * 1000)
-            .toString(),
+        "date":
+            DateTime.fromMillisecondsSinceEpoch(data['timestamp']).toString(),
         "status": "publish",
+        // "author": 4,
         "author": prefs.userID,
         "fields": repFields
       };
-      print('------------------------------------------------- $rep');
+      print('-------------------------------------------------');
+      print('$rep');
       prefs.pos = json.encode(rep);
+      print(rep);
 
-      prefs.contPos
-          ? await FirebaseProvider.nuevoTracking(
-              reporte: rep, collection: data['title'])
-          : null;
+      prefs.contPos ? await FirebaseProvider.nuevoTracking(reporte: rep) : null;
     } else {
       return;
     }

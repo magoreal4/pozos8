@@ -5,7 +5,7 @@ class WPAPI {
   final Dio _dio = new Dio();
   final prefs = new SharedP();
   String loginURL = 'http://www.pozos.xyz/wp-json/jwt-auth/v1/token';
-  String postURL = 'http://www.pozos.xyz/wp-json/wp/v2/registros';
+  String postURL = 'http://www.pozos.xyz/wp-json/wp/v2/tracking';
 
   Future<dynamic> login({String username, String password}) async {
     try {
