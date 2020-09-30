@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import 'package:pozos8/provider/firebase.dart';
@@ -28,6 +29,13 @@ void main() async {
 // enum LocationStatus { UNKNOWN, RUNNING, STOPPED }
 // LocationStatus _status = LocationStatus.UNKNOWN;
 
+// Parametros para el posicionamiento continuo
+Stream<Position> positionStream = getPositionStream(
+    desiredAccuracy: LocationAccuracy.best,
+    distanceFilter: 25,
+    timeInterval: 120000); // cada 120 segundos
+StreamSubscription<Position> positionStreamS;
+
 // --------Servicios en Background--------
 void onStart() async {
   // Todos lo sparametros para se ejecuten en el otro isolate
@@ -36,11 +44,38 @@ void onStart() async {
   final service = FlutterBackgroundService();
   final prefs2 = new SharedP();
   await prefs2.initPrefs();
+  await Firebase.initializeApp();
+
+  // _request.listen(onData);
+  positionStreamS = positionStream.listen(contPosition);
 
   service.setNotificationInfo(
     title: "Servicio Pozo Séptico",
     content: "Hola",
   );
+}
+
+// Funcion de background oara la localización continua
+void contPosition(Position locationDto) async {
+  final service = FlutterBackgroundService();
+  final prefs2 = new SharedP();
+
+  Map<String, dynamic> _time0;
+  Map<String, dynamic> _time1 = locationDto.toJson();
+  (prefs2.location == '')
+      ? _time0 = _time1
+      : _time0 = json.decode(prefs2.location);
+  prefs2.location = json.encode(_time1);
+  final int difference =
+      ((_time1['timestamp'] - _time0['timestamp']) / 1000).round();
+
+  print('Segundos $difference');
+
+  (difference > 300) // si se queda mas de xxx segundos
+      ? _time0.addAll({'estadia': difference.toString(), 'title': 'stop'})
+      : _time0.addAll({'estadia': '0', 'title': 'track'});
+  // Envia al hilo principal para ser enviado a firebase
+  service.sendData(_time0);
 }
 
 class MyApp extends StatefulWidget {

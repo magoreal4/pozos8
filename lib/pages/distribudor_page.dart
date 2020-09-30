@@ -104,34 +104,6 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
     //         (error) => print("No se pudo encontrar la posición: $error"));
   }
 
-// Funcion de background oara la localización continua
-  void contPosition(Position locationDto) async {
-    final service = FlutterBackgroundService();
-    // Todo lo que es prefs2 es porque esta en el background
-    final prefs2 = new SharedP();
-
-    // if (_status == LocationStatus.UNKNOWN) {
-    //   _status = LocationStatus.RUNNING;
-    // }
-    Map<String, dynamic> _time0;
-    Map<String, dynamic> _time1 = locationDto.toJson();
-    (prefs2.location == '')
-        ? _time0 = _time1
-        : _time0 = json.decode(prefs2.location);
-    prefs2.location = json.encode(_time1);
-    final int difference =
-        ((_time1['timestamp'] - _time0['timestamp']) / 1000).round();
-
-    print('Segundos $difference');
-
-    (difference > 300) // si se queda mas de xxx segundos
-        ? _time0.addAll({'estadia': difference.toString(), 'title': 'stop'})
-        : _time0.addAll({'estadia': '0', 'title': 'track'});
-
-    // Envia al hilo principal para ser enviado a firebase
-    service.sendData(_time0);
-  }
-
   // Escucha cambios de firestore para enviarlo al backcround
   void contPostData(dynamic data) async {
     //Si esta logueado recien escucha, porque antes de eso no existe usuario y causa error
