@@ -53,7 +53,7 @@ Stream<DocumentSnapshot> _request =
 Stream<Position> _positionStream = getPositionStream(
     desiredAccuracy: LocationAccuracy.best,
     distanceFilter: 0,
-    timeInterval: 120000); // cada 120 segundos
+    timeInterval: 30000); // cada 120 segundos
 // StreamSubscription<Position> positionStreamS;
 // LocationStatus _status = LocationStatus.UNKNOWN;
 
@@ -133,31 +133,32 @@ void contPosition(Position locationDto) async {
 
   print('Segundos $difference');
 
-  (difference > 300) // si se queda mas de xxx segundos
+  (difference > 30) // si se queda mas de xxx segundos
       ? _time0.addAll({'estadia': difference.toString(), 'title': 'stop'})
       : _time0.addAll({'estadia': '0', 'title': 'track'});
+  // service.sendData(_time0);
 
-  if (_time0 != null && prefs.log && prefs.contPos && !prefs.userID) {
-    Map<String, dynamic> repFields = {
-      "lat": _time0['latitude'],
-      "lon": _time0['longitude'],
-      "estadia": int.parse(_time0['estadia']),
-      "speed": _time0['speed'].round(),
-      "heading": _time0['heading'].round()
-    };
-    Map<String, dynamic> rep = {
-      "title": _time0['title'],
-      "date":
-          DateTime.fromMillisecondsSinceEpoch(_time0['timestamp']).toString(),
-      "status": "publish",
-      "author": prefs.userID,
-      "fields": repFields
-    };
-    // print('-------------------------------------------------');
-    // print('$rep');
-    prefs.pos = json.encode(rep);
-    await FirebaseProvider.nuevoTracking(reporte: rep);
-  }
+  // if (_time0 != null && prefs.log && prefs.contPos && !prefs.userID) {
+  //   Map<String, dynamic> repFields = {
+  //     "lat": _time0['latitude'],
+  //     "lon": _time0['longitude'],
+  //     "estadia": int.parse(_time0['estadia']),
+  //     "speed": _time0['speed'].round(),
+  //     "heading": _time0['heading'].round()
+  //   };
+  //   Map<String, dynamic> rep = {
+  //     "title": _time0['title'],
+  //     "date":
+  //         DateTime.fromMillisecondsSinceEpoch(_time0['timestamp']).toString(),
+  //     "status": "publish",
+  //     "author": prefs.userID,
+  //     "fields": repFields
+  //   };
+  //   // print('-------------------------------------------------');
+  //   // print('$rep');
+  //   prefs.pos = json.encode(rep);
+  //   await FirebaseProvider.nuevoTracking(reporte: rep);
+  // }
 }
 
 // Escucha en segundo plano para enviar la posicion instantanea
