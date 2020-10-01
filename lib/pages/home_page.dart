@@ -92,7 +92,7 @@ class _ListProgsState extends State<ListProgs> {
   void initState() {
     super.initState();
     _controller.stream.listen((String data) {
-      print("data $data");
+      // print("data $data");
     });
   }
 
@@ -109,7 +109,7 @@ class _ListProgsState extends State<ListProgs> {
             return SliverList(
                 delegate: SliverChildBuilderDelegate((_, index) {
               Map<String, dynamic> data = docss[index].data();
-              print(data);
+              // print(data);
               // Agrega el key de cada base de datos al mapa para depsues borrarlos
               data.addAll({'id': docss[index].id});
 
@@ -123,10 +123,10 @@ class _ListProgsState extends State<ListProgs> {
               String convertedDateTime =
                   "${fecha.day.toString().padLeft(2, '0')}-${fecha.month.toString().padLeft(2, '0')}-${fecha.year.toString()}";
               dist(locCamion, punto);
-              print("******************************");
-              print(data['author']);
-              print(prefs.userID);
-              print("******************************");
+              // print("******************************");
+              // print(data['author']);
+              // print(prefs.userID);
+              // print("******************************");
               // Para desplegar solo los programas para ese camion
               if (data['author'] == prefs.userID) {
                 // if (data['author'] == prefs.userID) {
@@ -295,7 +295,7 @@ class _ListProgsState extends State<ListProgs> {
                                                 // textColor: Colors.white,
                                                 onPressed: () {
                                                   prefs.precio = data['fields']
-                                                          ['price']
+                                                          ['precio']
                                                       .toString();
 
                                                   print(prefs.precio);

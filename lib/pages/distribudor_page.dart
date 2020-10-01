@@ -1,16 +1,10 @@
-import 'dart:async';
-import 'dart:convert';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:geolocator/geolocator.dart';
 
 import 'package:pozos8/pages/home_page.dart';
 import 'package:pozos8/pages/newreg_page.dart';
 import 'package:pozos8/pages/settings_page.dart';
-import 'package:pozos8/utils/dateFormat.dart';
+
 import 'package:pozos8/utils/sharedP.dart';
 
 class DistribuidorPage extends StatefulWidget {
@@ -41,7 +35,6 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
   @override
   void initState() {
     super.initState();
-    getPermission();
     // Inicia el servicio en un isolate aparte
 
     // Escucha cambios de firestore para enviarlo al background
@@ -59,49 +52,8 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
   @override
   void dispose() {
     super.dispose();
-
     // contPosFireSubscription.cancel();
     // positionStreamS.cancel();
-  }
-
-  Future<void> getPermission() async {
-    // Verificar el estado de permisos y conexión
-    LocationPermission permission = await checkPermission();
-    if (permission != LocationPermission.always) {
-      LocationPermission permission = await requestPermission();
-      if (permission != LocationPermission.always) {
-        await openLocationSettings();
-      }
-    }
-  }
-
-  void onData(DocumentSnapshot data) async {
-    print("Request location: ${data.data()}");
-    Position _position =
-        await getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-
-    var _date = formatDate(dateTime: DateTime.now());
-
-    Map<String, dynamic> repFields = {
-      "lat": _position.latitude,
-      "lon": _position.longitude,
-      "speed": _position.speed.round(),
-      "heading": _position.heading.round()
-    };
-    Map<String, dynamic> rep = {
-      "title": "track",
-      "date": _date,
-      "status": "publish",
-      "author": prefs.userID,
-      "fields": repFields
-    };
-
-    // await pos
-    //     .doc(_date)
-    //     .set(rep)
-    //     .then((value) => print("Position Encontrada"))
-    //     .catchError(
-    //         (error) => print("No se pudo encontrar la posición: $error"));
   }
 
   // Escucha cambios de firestore para enviarlo al backcround

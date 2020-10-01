@@ -254,9 +254,9 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
       timeLimit: Duration(minutes: 1),
     );
 
-    print("3. Coordenadas");
-    print("Latitud ${_position.latitude}");
-    print("Longitud ${_position.longitude}");
+    // print("3. Coordenadas");
+    // print("Latitud ${_position.latitude}");
+    // print("Longitud ${_position.longitude}");
 
     repForm.date = formatDate(dateTime: DateTime.now());
 
@@ -275,22 +275,15 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
       "author": prefs.userID,
       "fields": repFields
     };
-    // print(rep);
 
     (_id != null)
         ? await FirebaseProvider.done(key: _id, reporte: rep)
-        : await FirebaseProvider.nuevoRegistro(reporte: rep);
+        : await FirebaseProvider.nuevoTracking(reporte: rep);
 
-    // // if (prefs.connect) {
-    // if (true) {
     prefs.precio = '';
     Toast.show("Reporte Enviado", context,
         duration: 4, gravity: Toast.CENTER, backgroundColor: Colors.green);
-    // } else {
-    //   // prefs.precio = "0";
-    //   Toast.show("Reporte Emitido", context,
-    //       duration: 4, gravity: Toast.CENTER, backgroundColor: Colors.red[400]);
-    // }
+
     setState(() {
       _isValidating = false;
     });

@@ -7,7 +7,8 @@ class FirebaseProvider {
       FirebaseFirestore.instance.collection('choferes');
   static CollectionReference tracking =
       FirebaseFirestore.instance.collection('tracking');
-
+  static CollectionReference progs =
+      FirebaseFirestore.instance.collection('programas');
   static SharedP prefs = new SharedP();
 
   static Future<bool> verifyUser() async {
@@ -56,20 +57,8 @@ class FirebaseProvider {
         .catchError((error) => print("Falla al enviar reporte: $error"));
   }
 
-  static Future<void> nuevoRegistro({Map reporte}) {
-    CollectionReference registros =
-        FirebaseFirestore.instance.collection('registros');
-    return registros
-        .doc(reporte['date'])
-        .set(reporte)
-        .then((_) => print("Reporte enviado"))
-        .catchError((error) => print("Falla al enviar reporte: $error"));
-  }
-
   static Future<void> done({String key, Map reporte}) {
-    CollectionReference programas =
-        FirebaseFirestore.instance.collection('programas');
-    return programas
+    return progs
         .doc(key)
         .update({'done': true, 'date': reporte['date']})
         .then((_) => print("Reporte atualizado"))
