@@ -1,4 +1,7 @@
 google-services.json
+key.properties
+build.gradle
+
 
 # Miscellaneous
 *.class

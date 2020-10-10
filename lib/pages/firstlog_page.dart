@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pozos8/utils/dateFormat.dart';
 import 'package:toast/toast.dart';
@@ -185,10 +186,10 @@ class _FirstLogPageState extends State<FirstLogPage> {
       exist = await FirebaseProvider.verifyUser();
       if (exist) {
         // Actualiza token de PN
-        FirebaseProvider.userUpdate();
+        await FirebaseProvider.userUpdate();
       } else {
         // Enviar a firebase usuario
-        FirebaseProvider.addUser();
+        await FirebaseProvider.addUser();
       }
 
       // Enviar a registro posicion
@@ -198,7 +199,8 @@ class _FirstLogPageState extends State<FirstLogPage> {
       setState(() {
         _isValidating = false;
       });
-      Navigator.popAndPushNamed(context, 'distribuidor');
+      // Navigator.popAndPushNamed(context, 'distribuidor');
+      Phoenix.rebirth(context);
     } else {
       Toast.show("Credenciales inválidas. Revise Nombre y/o teléfono", context,
           duration: 4, gravity: Toast.CENTER, backgroundColor: Colors.red[400]);

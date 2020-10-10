@@ -7,8 +7,9 @@ class FirebaseProvider {
       FirebaseFirestore.instance.collection('choferes');
   static CollectionReference tracking =
       FirebaseFirestore.instance.collection('tracking');
-  static CollectionReference progs =
-      FirebaseFirestore.instance.collection('programas');
+  static CollectionReference registros =
+      FirebaseFirestore.instance.collection('registros');
+
   static SharedP prefs = new SharedP();
 
   static Future<bool> verifyUser() async {
@@ -28,23 +29,28 @@ class FirebaseProvider {
   }
 
   static Future<void> addUser() {
-    return chofer
-        .doc(prefs.nameUser)
-        .set({
-          'telefono': prefs.telfUser,
-          'userID_WP': prefs.userID,
-          'tokenPN': prefs.tokenPN,
-          'date': DateTime.now().toString(),
-          'contPosition': true
-        })
-        .then((value) => print("Chofer Aceptado"))
-        .catchError((error) => print("Fallo al aceptar chofer: $error"));
+    return chofer.doc(prefs.nameUser).set({
+      'telefono': prefs.telfUser,
+      'userID_WP': prefs.userID,
+      'tokenPN': prefs.tokenPN,
+      'date': DateTime.now().toString(),
+      'contPosition': true,
+      'soloStop': true,
+      // 'timeInterval': 120000
+    }).then((value) {
+      print("Chofer Aceptado");
+    }).catchError((error) => print("Fallo al aceptar chofer: $error"));
   }
 
   static Future<void> userUpdate() {
     return chofer
         .doc(prefs.nameUser)
-        .update({'tokenPN': prefs.tokenPN, 'userID_WP': prefs.userID})
+        .update({
+          'tokenPN': prefs.tokenPN,
+          'userID_WP': prefs.userID,
+          'contPosition': true,
+          'soloStop': true,
+        })
         .then((value) => print("Modificacion del chofer "))
         .catchError((error) => print("Fallo modificacion del chofer: $error"));
   }
@@ -57,8 +63,18 @@ class FirebaseProvider {
         .catchError((error) => print("Falla al enviar reporte: $error"));
   }
 
+  static Future<void> nuevoRegistro({Map reporte}) {
+    return registros
+        .doc(reporte['date'])
+        .set(reporte)
+        .then((_) => print("Registro enviado"))
+        .catchError((error) => print("Falla al enviar registro: $error"));
+  }
+
   static Future<void> done({String key, Map reporte}) {
-    return progs
+    CollectionReference programas =
+        FirebaseFirestore.instance.collection('programas');
+    return programas
         .doc(key)
         .update({'done': true, 'date': reporte['date']})
         .then((_) => print("Reporte atualizado"))

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pozos8/provider/firebase.dart';
 import 'package:pozos8/utils/dateFormat.dart';
@@ -38,7 +39,9 @@ void main() async {
 
   runApp(ChangeNotifierProvider(
     create: (context) => SharedP(),
-    child: MyApp(),
+    child: Phoenix(
+      child: MyApp(),
+    ),
   ));
 }
 
@@ -46,16 +49,18 @@ final prefs = new SharedP();
 // enum LocationStatus { UNKNOWN, RUNNING, STOPPED }
 CollectionReference pos = FirebaseFirestore.instance.collection('tracking');
 
-Stream<DocumentSnapshot> _request =
-    FirebaseFirestore.instance.collection('choferes').doc('All').snapshots();
+Stream<DocumentSnapshot> _currentPosition =
+    FirebaseFirestore.instance.collection('All').doc('position').snapshots();
 
 // Parametros para el posicionamiento continuo
 Stream<Position> _positionStream = getPositionStream(
-    desiredAccuracy: LocationAccuracy.best,
-    distanceFilter: 0,
-    timeInterval: 30000); // cada 120 segundos
-// StreamSubscription<Position> positionStreamS;
+    desiredAccuracy: LocationAccuracy.bestForNavigation,
+    distanceFilter: 50,
+    timeInterval: 60000); // cada 120 segundos
+StreamSubscription<Position> positionStreamS;
 // LocationStatus _status = LocationStatus.UNKNOWN;
+
+StreamSubscription configChoferS;
 
 // --------Servicios en Background--------
 void onStart() async {
@@ -66,11 +71,57 @@ void onStart() async {
   final prefs2 = new SharedP();
   await prefs2.initPrefs();
 
-  // Escucha posición continua
-  _positionStream.listen(contPosition);
+  service.onDataReceived.listen((event) {
+    if (event['nameUser'] is String) {
+      prefs2.nameUser = event['nameUser'];
+    }
+  });
 
-  // Escucha cambios en cada uno de los campos para cada chofer
-  _request.listen(onData);
+  // Escucha posición continua
+  positionStreamS = _positionStream.listen(contPosition);
+
+  // Escucha cambios en All especialmente para posicion inmediarta de todos
+  _currentPosition.listen(currentPositionData);
+
+  // Escucha los cambios de configuración del choferres
+  Stream<QuerySnapshot> _configChofer =
+      FirebaseFirestore.instance.collection('choferes').snapshots();
+
+  configChoferS = _configChofer.listen((data) {
+    data.docChanges.forEach((element) async {
+      if (element.doc.id == prefs2.nameUser) {
+        if (prefs2.cPos && !element.doc.data()['contPosition']) {
+          print("Desactivar contPos");
+          positionStreamS.cancel();
+          prefs2.cPos = false;
+        }
+        if (!prefs2.cPos && element.doc.data()['contPosition']) {
+          print("Activar contPos");
+          positionStreamS = _positionStream.listen(contPosition);
+          prefs2.cPos = true;
+        }
+        if (prefs2.sStop && !element.doc.data()['soloStop']) {
+          print("Desactivar Solo Stop");
+          prefs2.sStop = false;
+        }
+
+        if (!prefs2.sStop && element.doc.data()['soloStop']) {
+          print("Activa Solo Stop");
+          prefs2.sStop = true;
+        }
+
+        // if (prefs2.timeInter != element.doc.data()['timeInterval']) {
+        //   await positionStreamS.cancel();
+        //   print("Cambia Time Interval");
+        //   prefs2.timeInter = element.doc.data()['timeInterval'];
+        //   positionStreamS = _positionStream.listen(contPosition);
+        //   print(prefs2.timeInter);
+        // }
+      } else {
+        print("No hay cambios en configuración");
+      }
+    });
+  });
 
   // _contPos.listen((event) {
   //   if (event['contPosition']) {
@@ -82,7 +133,7 @@ void onStart() async {
 
   service.setNotificationInfo(
     title: "Servicio Pozo Séptico",
-    content: "Hola",
+    content: "Gestion de clientes",
   );
 
   // Position position0 = await getLastKnownPosition();
@@ -119,6 +170,7 @@ void onStart() async {
 
 // Funcion de background para la localización continua
 void contPosition(Position locationDto) async {
+  final service = FlutterBackgroundService();
   // Todo lo que es prefs2 es porque esta en el background
   final prefs2 = new SharedP();
 
@@ -131,38 +183,19 @@ void contPosition(Position locationDto) async {
   final int difference =
       ((_time1['timestamp'] - _time0['timestamp']) / 1000).round();
 
+  if (difference > 300) // si se queda mas de xxx segundos
+  {
+    _time1.addAll({'estadia': difference.toString(), 'title': 'stop'});
+  } else {
+    _time1.addAll({'estadia': '0', 'title': 'track'});
+  }
+
   print('Segundos $difference');
-
-  (difference > 30) // si se queda mas de xxx segundos
-      ? _time0.addAll({'estadia': difference.toString(), 'title': 'stop'})
-      : _time0.addAll({'estadia': '0', 'title': 'track'});
-  // service.sendData(_time0);
-
-  // if (_time0 != null && prefs.log && prefs.contPos && !prefs.userID) {
-  //   Map<String, dynamic> repFields = {
-  //     "lat": _time0['latitude'],
-  //     "lon": _time0['longitude'],
-  //     "estadia": int.parse(_time0['estadia']),
-  //     "speed": _time0['speed'].round(),
-  //     "heading": _time0['heading'].round()
-  //   };
-  //   Map<String, dynamic> rep = {
-  //     "title": _time0['title'],
-  //     "date":
-  //         DateTime.fromMillisecondsSinceEpoch(_time0['timestamp']).toString(),
-  //     "status": "publish",
-  //     "author": prefs.userID,
-  //     "fields": repFields
-  //   };
-  //   // print('-------------------------------------------------');
-  //   // print('$rep');
-  //   prefs.pos = json.encode(rep);
-  //   await FirebaseProvider.nuevoTracking(reporte: rep);
-  // }
+  service.sendData(_time1);
 }
 
 // Escucha en segundo plano para enviar la posicion instantanea
-void onData(DocumentSnapshot data) async {
+void currentPositionData(DocumentSnapshot data) async {
   print("Request location: ${data.data()}");
   Position _position =
       await getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
@@ -198,20 +231,47 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final prefs = new SharedP();
 
-  // Stream contPos = FlutterBackgroundService().onDataReceived;
-  // StreamSubscription contPosSubscription;
+  Stream contPos = FlutterBackgroundService().onDataReceived;
+  StreamSubscription contPosSubscription;
 
   @override
   void initState() {
     super.initState();
     // Recibe los datos de la posición contínua del background
-    // contPosSubscription = contPos.listen(onData);
+    contPosSubscription = contPos.listen(contData);
   }
 
   @override
   void dispose() {
     super.dispose();
-    // contPosSubscription.cancel();
+    contPosSubscription.cancel();
+  }
+
+  // Recibe los datos de la posición contínua del background
+  void contData(dynamic data) async {
+    if (data != null && prefs.log && prefs.userID > 0) {
+      Map<String, dynamic> repFields = {
+        "lat": data['latitude'],
+        "lon": data['longitude'],
+        "estadia": int.parse(data['estadia']),
+        "speed": data['speed'].round(),
+        "heading": data['heading'].round()
+      };
+      Map<String, dynamic> rep = {
+        "title": data['title'],
+        "date":
+            DateTime.fromMillisecondsSinceEpoch(data['timestamp']).toString(),
+        "status": "publish",
+        // "author": 4,
+        "author": prefs.userID,
+        "fields": repFields
+      };
+      prefs.pos = json.encode(rep);
+      print("++++++++++++++++++++++++++++++++++++++");
+      print(rep);
+
+      (prefs.cPos) ? await FirebaseProvider.nuevoTracking(reporte: rep) : null;
+    }
   }
 
   @override

@@ -18,6 +18,7 @@ class DistribuidorPage extends StatefulWidget {
 class _DistribuidorPageState extends State<DistribuidorPage> {
   int currenIndex = 0;
   final prefs = new SharedP();
+  final service = FlutterBackgroundService();
   // StreamSubscription contPosFireSubscription;
 
   // Stream<DocumentSnapshot> _request =
@@ -35,6 +36,9 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
   @override
   void initState() {
     super.initState();
+    service.sendData(
+      {"nameUser": prefs.nameUser},
+    );
     // Inicia el servicio en un isolate aparte
 
     // Escucha cambios de firestore para enviarlo al background
@@ -56,14 +60,14 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
     // positionStreamS.cancel();
   }
 
-  // Escucha cambios de firestore para enviarlo al backcround
-  void contPostData(dynamic data) async {
-    //Si esta logueado recien escucha, porque antes de eso no existe usuario y causa error
-    prefs.contPos = data.data()['contPosition'];
-    FlutterBackgroundService().sendData({
-      "contPosition": prefs.contPos,
-    });
-  }
+  // // Escucha cambios de firestore para enviarlo al backcround
+  // void contPostData(dynamic data) async {
+  //   //Si esta logueado recien escucha, porque antes de eso no existe usuario y causa error
+  //   prefs.contPos = data.data()['contPosition'];
+  //   FlutterBackgroundService().sendData({
+  //     "contPosition": prefs.contPos,
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {

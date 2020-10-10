@@ -278,7 +278,7 @@ class _NuevoRegistroPageState extends State<NuevoRegistroPage> {
 
     (_id != null)
         ? await FirebaseProvider.done(key: _id, reporte: rep)
-        : await FirebaseProvider.nuevoTracking(reporte: rep);
+        : await FirebaseProvider.nuevoRegistro(reporte: rep);
 
     prefs.precio = '';
     Toast.show("Reporte Enviado", context,

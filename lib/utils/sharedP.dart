@@ -103,15 +103,6 @@ class SharedP with ChangeNotifier {
     _prefs.setString('precio', value);
   }
 
-  // GET y SET precio
-  get contPos {
-    return _prefs.getBool('contPos') ?? true;
-  }
-
-  set contPos(bool value) {
-    _prefs.setBool('contPos', value);
-  }
-
   // ----------------------PARA EL BACKGROUND----------------------
 
   // GET y SET coordenadas para el background
@@ -122,4 +113,31 @@ class SharedP with ChangeNotifier {
   set location(String value) {
     _prefs.setString('location', value);
   }
+
+  // GET y SET configuracion de posición continua
+  get cPos {
+    return _prefs.getBool('contPosition') ?? true;
+  }
+
+  set cPos(bool value) {
+    _prefs.setBool('contPosition', value);
+  }
+
+  // GET y SET configuracion de Solo Stop
+  get sStop {
+    return _prefs.getBool('sStop') ?? true;
+  }
+
+  set sStop(bool value) {
+    _prefs.setBool('sStop', value);
+  }
+
+  // // GET y SET configuracion de Intervalo de tiempo para posicion continua
+  // get timeInter {
+  //   return _prefs.getInt('timeInterval') ?? 120000;
+  // }
+
+  // set timeInter(int value) {
+  //   _prefs.setInt('timeInterval', value);
+  // }
 }
