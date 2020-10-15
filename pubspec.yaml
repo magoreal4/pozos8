@@ -1,5 +1,5 @@
 name: pozos8
-description: A new Flutter project.
+description: Gestion de Flotas.
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -23,6 +23,12 @@ dependencies:
   geolocator: ^6.0.0+4
   flutter_background_service: ^0.0.1+14
   flutter_phoenix: "^0.1.0"
+  flutter_native_splash: ^0.1.9
+
+flutter_native_splash:
+  image: assets/splash.png
+  color: 2e3842
+
 
   
 

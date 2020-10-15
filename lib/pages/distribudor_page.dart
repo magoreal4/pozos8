@@ -93,12 +93,10 @@ class _DistribuidorPageState extends State<DistribuidorPage> {
             });
           },
           items: [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.home), title: Text('Inicio')),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.settings), title: Text('Ajustes')),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.send), title: Text('Registro'))
+                icon: Icon(Icons.settings), label: 'Ajustes'),
+            BottomNavigationBarItem(icon: Icon(Icons.send), label: 'Registro')
           ]),
     );
   }

@@ -49,20 +49,20 @@ final prefs = new SharedP();
 // enum LocationStatus { UNKNOWN, RUNNING, STOPPED }
 CollectionReference pos = FirebaseFirestore.instance.collection('tracking');
 
-Stream<DocumentSnapshot> _currentPosition =
-    FirebaseFirestore.instance.collection('All').doc('position').snapshots();
+// Stream<DocumentSnapshot> _currentPosition =
+//     FirebaseFirestore.instance.collection('All').doc('position').snapshots();
 
 // Parametros para el posicionamiento continuo
 Stream<Position> _positionStream = getPositionStream(
     desiredAccuracy: LocationAccuracy.bestForNavigation,
-    distanceFilter: 50,
-    timeInterval: 60000); // cada 120 segundos
+    distanceFilter: 70,
+    timeInterval: 30000); // cada 120 segundos
 StreamSubscription<Position> positionStreamS;
 // LocationStatus _status = LocationStatus.UNKNOWN;
 
 StreamSubscription configChoferS;
 
-// --------Servicios en Background--------
+// --------Servicios en Backgound--------
 void onStart() async {
   // Todos lo sparametros para se ejecuten en el otro isolate
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,7 +81,7 @@ void onStart() async {
   positionStreamS = _positionStream.listen(contPosition);
 
   // Escucha cambios en All especialmente para posicion inmediarta de todos
-  _currentPosition.listen(currentPositionData);
+  // _currentPosition.listen(currentPositionData);
 
   // Escucha los cambios de configuración del choferres
   Stream<QuerySnapshot> _configChofer =
@@ -109,14 +109,6 @@ void onStart() async {
           print("Activa Solo Stop");
           prefs2.sStop = true;
         }
-
-        // if (prefs2.timeInter != element.doc.data()['timeInterval']) {
-        //   await positionStreamS.cancel();
-        //   print("Cambia Time Interval");
-        //   prefs2.timeInter = element.doc.data()['timeInterval'];
-        //   positionStreamS = _positionStream.listen(contPosition);
-        //   print(prefs2.timeInter);
-        // }
       } else {
         print("No hay cambios en configuración");
       }
@@ -174,8 +166,15 @@ void contPosition(Position locationDto) async {
   // Todo lo que es prefs2 es porque esta en el background
   final prefs2 = new SharedP();
 
+  // Position _position = await getCurrentPosition(
+  //     desiredAccuracy: LocationAccuracy.bestForNavigation,
+  //     timeLimit: Duration(seconds: 10));
+
   Map<String, dynamic> _time0;
   Map<String, dynamic> _time1 = locationDto.toJson();
+  print(_time0);
+  print(_time1);
+  // print(_position);
   (prefs2.location == '')
       ? _time0 = _time1
       : _time0 = json.decode(prefs2.location);
@@ -183,7 +182,7 @@ void contPosition(Position locationDto) async {
   final int difference =
       ((_time1['timestamp'] - _time0['timestamp']) / 1000).round();
 
-  if (difference > 300) // si se queda mas de xxx segundos
+  if (difference > 600) // si se queda mas de xxx segundos
   {
     _time1.addAll({'estadia': difference.toString(), 'title': 'stop'});
   } else {
